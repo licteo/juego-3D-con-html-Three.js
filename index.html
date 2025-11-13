@@ -1,18 +1,51 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Mi Escena 3D con Three.js</title>
+    <title>3D Primera Persona (Híbrido)</title>
     <style>
-        body { margin: 0; }
+        body { margin: 0; overflow: hidden; }
+        
+        /* Estilo para los botones de movimiento en móvil */
+        #controls-container {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 100;
+        }
+        .move-button {
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 255, 255, 0.4);
+            color: black;
+            border-radius: 5px;
+            border: 1px solid white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            user-select: none; /* Evita selección de texto */
+            touch-action: manipulation; /* Mejora la respuesta táctil */
+            position: absolute;
+        }
+        /* Posicionamiento para simular un D-Pad */
+        #btn-forward { top: 0; left: 50px; }
+        #btn-left { top: 50px; left: 0; }
+        #btn-backward { top: 50px; left: 50px; }
+        #btn-right { top: 50px; left: 100px; }
     </style>
 </head>
 <body>
+    <div id="controls-container">
+        <div class="move-button" id="btn-forward">▲</div>
+        <div class="move-button" id="btn-left">◀</div>
+        <div class="move-button" id="btn-backward">▼</div>
+        <div class="move-button" id="btn-right">▶</div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script> 
-
     <script src="https://unpkg.com/three@0.137.0/examples/js/loaders/RGBELoader.js"></script>
-
     <script src="https://unpkg.com/three@0.137.0/examples/js/controls/PointerLockControls.js"></script>
-
     <script src="./main.js"></script> 
 </body>
 </html>
