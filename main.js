@@ -1,98 +1,106 @@
 // =========================================================
-// THREE.JS: ESCENA EN PRIMERA PERSONA (Híbrido PC/Móvil)
+// THREE.JS: PRIMERA PERSONA CON JOYSTICK (NippleJS) Y WASD/ORBITCONTROLS
 // =========================================================
 
+// Variables globales y auxiliares
 let hdrTexture = null;
 let controls;
 let prevTime = performance.now(); 
 
-// Variables de movimiento
+// Variables de movimiento para WASD/Teclado
+let moveForwardKeyboard = false;
+let moveBackwardKeyboard = false;
+let moveLeftKeyboard = false;
+let moveRightKeyboard = false;
+
+// Variables de movimiento para Joystick (NippleJS)
+let moveXJoystick = 0;
+let moveZJoystick = 0;
+const speed = 15.0; // Velocidad de movimiento
+
+// Vectores auxiliares para el cálculo de la dirección (evitan crear nuevos vectores en cada frame)
+const direction = new THREE.Vector3();
 const velocity = new THREE.Vector3();
-let moveForward = false;
-let moveBackward = false;
-let moveLeft = false;
-let moveRight = false;
-const speed = 150.0; 
+const sideDirection = new THREE.Vector3();
 
 
 // === 1. PILARES FUNDAMENTALES ===
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.y = 1.6; 
+camera.position.y = 1.6; // Altura de los ojos
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 
-// === 2. CONTROLES: POINTERLOCK (PC) ===
+// === 2. CONTROLES: ORBITCONTROLS PARA LOOK HÍBRIDO (PC/MÓVIL) ===
 
-// PointerLockControls para la vista en PC (se activa al hacer clic)
-controls = new THREE.PointerLockControls(camera, document.body);
+// OrbitControls: permite rotar la vista con el ratón o el dedo.
+controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.enableZoom = false; // Deshabilitar zoom para FPS
+controls.enablePan = false;  // Deshabilitar paneo
+controls.maxPolarAngle = Math.PI / 2; // Evita mirar debajo del horizonte (para FPS)
 
+// Target inicial: un punto justo delante de la cámara
+controls.target.set(camera.position.x, camera.position.y, camera.position.z - 0.1); 
+
+// Mensaje de instrucciones
 const instructions = document.createElement('div');
-instructions.style.cssText = 'position: absolute; top: 50%; width: 100%; text-align: center; color: white; background-color: rgba(0,0,0,0.5); padding: 10px; cursor: pointer;';
-instructions.innerHTML = 'Haz clic para comenzar (WASD o Botones para mover)';
+instructions.id = 'instructions';
+instructions.innerHTML = 'Usa el ratón/tacto para mirar, WASD/Joystick para mover';
 document.body.appendChild(instructions);
 
-// Evento para activar los controles con un clic (solo PC)
 instructions.addEventListener('click', () => {
-    // Intentamos bloquear el puntero (funciona en PC)
-    controls.lock();
     instructions.style.display = 'none';
 });
 
 
-// === 3. MANEJO DE TECLADO (WASD) ===
+// === 3. JOYSTICK VIRTUAL (NippleJS) ===
 
-document.addEventListener('keydown', (event) => {
-    if (controls.isLocked) { // Solo si el control está activo
-        switch (event.code) {
-            case 'KeyW': moveForward = true; break;
-            case 'KeyA': moveLeft = true; break;
-            case 'KeyS': moveBackward = true; break;
-            case 'KeyD': moveRight = true; break;
+// Verificamos que NippleJS haya cargado correctamente
+if (typeof nipplejs !== 'undefined') {
+    const joystick = nipplejs.create({
+        zone: document.getElementById('joystick-zone'),
+        mode: 'static',
+        position: { left: '50%', bottom: '50%' },
+        color: 'white',
+        size: 100
+    });
+
+    joystick.on('move', (evt, data) => {
+        if (data && data.vector) {
+            // El vector X es el movimiento lateral, el vector Y es el movimiento adelante/atrás
+            moveXJoystick = data.vector.x;
+            moveZJoystick = data.vector.y; 
         }
+    });
+
+    joystick.on('end', () => {
+        moveXJoystick = 0;
+        moveZJoystick = 0;
+    });
+}
+
+
+// === 4. MANEJO DE TECLADO (WASD) ===
+document.addEventListener('keydown', (event) => {
+    switch (event.code) {
+        case 'KeyW': moveForwardKeyboard = true; break;
+        case 'KeyA': moveLeftKeyboard = true; break;
+        case 'KeyS': moveBackwardKeyboard = true; break;
+        case 'KeyD': moveRightKeyboard = true; break;
     }
 });
 
 document.addEventListener('keyup', (event) => {
     switch (event.code) {
-        case 'KeyW': moveForward = false; break;
-        case 'KeyA': moveLeft = false; break;
-        case 'KeyS': moveBackward = false; break;
-        case 'KeyD': moveRight = false; break;
-    }
-});
-
-// === 4. MANEJO TÁCTIL (BOTONES VIRTUALES) ===
-
-// Función para mapear el ID del botón a la variable de movimiento
-function mapButton(id, state) {
-    switch (id) {
-        case 'btn-forward': moveForward = state; break;
-        case 'btn-left': moveLeft = state; break;
-        case 'btn-backward': moveBackward = state; break;
-        case 'btn-right': moveRight = state; break;
-    }
-}
-
-// Configurar los eventos táctiles para cada botón
-['btn-forward', 'btn-left', 'btn-backward', 'btn-right'].forEach(id => {
-    const button = document.getElementById(id);
-    if (button) {
-        // Al tocar (activar movimiento)
-        button.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // Previene el zoom/scroll predeterminado
-            mapButton(id, true);
-        }, false);
-        
-        // Al soltar (detener movimiento)
-        button.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            mapButton(id, false);
-        }, false);
+        case 'KeyW': moveForwardKeyboard = false; break;
+        case 'KeyA': moveLeftKeyboard = false; break;
+        case 'KeyS': moveBackwardKeyboard = false; break;
+        case 'KeyD': moveRightKeyboard = false; break;
     }
 });
 
@@ -127,26 +135,57 @@ function animate() {
     const time = performance.now();
     const delta = (time - prevTime) / 1000;
 
-    // Lógica de Movimiento
-    // La vista se controla con el ratón (PointerLock) en PC. 
-    // En móvil, la rotación de la cámara es por el tacto simple de arrastrar la pantalla.
+    // A. LÓGICA DE MOVIMIENTO BASE (Combinar Joystick y Teclado)
     
-    // Reiniciar velocidad
-    velocity.x -= velocity.x * 10.0 * delta;
-    velocity.z -= velocity.z * 10.0 * delta;
+    // 1. Inicializar el vector de velocidad para este frame
+    velocity.set(0, 0, 0); 
 
-    // Aplicar movimiento (funciona con WASD o botones virtuales)
-    if (moveForward) velocity.z -= speed * delta;
-    if (moveBackward) velocity.z += speed * delta;
-    if (moveLeft) velocity.x -= speed * delta;
-    if (moveRight) velocity.x += speed * delta;
+    // 2. Priorizar la entrada de movimiento (WASD sobre Joystick)
+    if (moveForwardKeyboard || moveBackwardKeyboard || moveLeftKeyboard || moveRightKeyboard) {
+        if (moveForwardKeyboard) velocity.z -= 1;
+        if (moveBackwardKeyboard) velocity.z += 1;
+        if (moveLeftKeyboard) velocity.x -= 1;
+        if (moveRightKeyboard) velocity.x += 1;
+    } 
+    // Si no hay teclado, usar joystick (NippleJS)
+    else {
+        // La dirección Y de NippleJS (adelante/atrás) mapea a Z de Three.js (adelante/atrás)
+        velocity.x = moveXJoystick;
+        velocity.z = -moveZJoystick; // Negativo en Z porque NippleJS Y positivo es hacia ARRIBA
+    }
 
-    // Aplicar movimiento usando los métodos de PointerLockControls
-    // Estos métodos usan la dirección actual de la cámara
-    controls.moveForward(-velocity.z * delta);
-    controls.moveRight(velocity.x * delta);
+    // 3. Aplicar el movimiento si el vector de velocidad no es cero
+    if (velocity.lengthSq() > 0) {
+        // Normalizar velocidad y aplicar escala por tiempo y velocidad base
+        velocity.normalize().multiplyScalar(speed * delta);
+
+        // Obtener la dirección a la que apunta la cámara (horizontal)
+        camera.getWorldDirection(direction); 
+        direction.y = 0; // Evitar que la cámara vuele
+        direction.normalize(); 
+
+        // Obtener la dirección lateral (perpendicular al avance)
+        sideDirection.copy(direction).cross(camera.up); 
+        
+        // Aplicar el movimiento a la posición de la cámara:
+        // Avance/Retroceso
+        camera.position.addScaledVector(direction, velocity.z);
+        // Lateral
+        camera.position.addScaledVector(sideDirection, velocity.x);
+    }
     
-    // Animación de Nubes
+    // B. LÓGICA DE ROTACIÓN (Look)
+    
+    // 1. Mover el target del OrbitControls con la cámara
+    // Esto hace que la cámara gire sobre sí misma (FPS), no orbite.
+    controls.target.copy(camera.position);
+    controls.target.y += 0.001; 
+    
+    // 2. Actualizar controles. Esto procesa el movimiento del ratón/tacto.
+    controls.update(); 
+    
+    // C. Animaciones
+    cube.rotation.y += 0.005;
     if (hdrTexture) {
         hdrTexture.offset.x += 0.0001;
     }

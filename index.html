@@ -1,51 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>3D Primera Persona (Híbrido)</title>
+    <title>3D Primera Persona (Joystick Híbrido)</title>
     <style>
-        body { margin: 0; overflow: hidden; }
+        body { margin: 0; overflow: hidden; background: #000; }
         
-        /* Estilo para los botones de movimiento en móvil */
-        #controls-container {
+        /* Estilo para la zona del joystick */
+        #joystick-zone {
             position: absolute;
             bottom: 20px;
             left: 20px;
-            z-index: 100;
+            width: 150px;
+            height: 150px;
+            z-index: 100; /* Asegura que esté encima del canvas */
         }
-        .move-button {
-            width: 50px;
-            height: 50px;
-            background-color: rgba(255, 255, 255, 0.4);
-            color: black;
-            border-radius: 5px;
-            border: 1px solid white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 20px;
-            font-weight: bold;
-            user-select: none; /* Evita selección de texto */
-            touch-action: manipulation; /* Mejora la respuesta táctil */
-            position: absolute;
+
+        /* Estilo para las instrucciones de PC */
+        #instructions {
+            position: absolute; 
+            top: 0; 
+            width: 100%; 
+            text-align: center; 
+            color: white; 
+            background-color: rgba(0,0,0,0.7); 
+            padding: 10px; 
+            z-index: 99;
+            font-family: sans-serif;
         }
-        /* Posicionamiento para simular un D-Pad */
-        #btn-forward { top: 0; left: 50px; }
-        #btn-left { top: 50px; left: 0; }
-        #btn-backward { top: 50px; left: 50px; }
-        #btn-right { top: 50px; left: 100px; }
+
     </style>
 </head>
 <body>
-    <div id="controls-container">
-        <div class="move-button" id="btn-forward">▲</div>
-        <div class="move-button" id="btn-left">◀</div>
-        <div class="move-button" id="btn-backward">▼</div>
-        <div class="move-button" id="btn-right">▶</div>
-    </div>
+    <div id="joystick-zone"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/nipplejs@0.9.0/dist/nipplejs.min.js"></script>
     <script src="https://unpkg.com/three@0.137.0/examples/js/loaders/RGBELoader.js"></script>
-    <script src="https://unpkg.com/three@0.137.0/examples/js/controls/PointerLockControls.js"></script>
+    <script src="https://unpkg.com/three@0.137.0/examples/js/controls/OrbitControls.js"></script>
     <script src="./main.js"></script> 
 </body>
 </html>
